@@ -7,6 +7,7 @@ from enum import Enum
 class UserRole(str, Enum):
     STUDENT = "student"
     RECRUITER = "recruiter"
+    BUSINESS = "business"
     ADMIN = "admin"
 
 
@@ -14,6 +15,16 @@ class UserBase(BaseModel):
     email: EmailStr
     full_name: str
     role: UserRole = UserRole.STUDENT
+
+
+class BusinessOnboardingData(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    company_name: str = Field(min_length=2, max_length=120)
+    industry: str = Field(min_length=2, max_length=120)
+    company_size: str = Field(min_length=1, max_length=50)
+    website: Optional[str] = Field(default=None, max_length=255)
+    description: Optional[str] = Field(default=None, max_length=500)
 
 
 class UserCreate(UserBase):
@@ -49,7 +60,7 @@ class RecruiterOnboardingData(BaseModel):
 
 
 class OnboardingRequest(BaseModel):
-    role: Literal["student", "recruiter"]
+    role: Literal["student", "recruiter", "business"]
     data: dict
 
 

@@ -29,7 +29,7 @@ interface AuthContextValue {
     email: string;
     password: string;
     full_name: string;
-    role: "student" | "recruiter";
+    role: "student" | "recruiter" | "business";
   }) => Promise<void>;
   logout: () => void;
 }
@@ -47,9 +47,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const current = nextUser ?? user;
     if (!current) return "/";
     if (!current.onboarding_completed) return "/onboarding";
-    return current.role === "recruiter"
-      ? "/recruiter/dashboard"
-      : "/student/dashboard";
+    if (current.role === "recruiter" || current.role === "business")
+      return "/recruiter/dashboard";
+    return "/student/dashboard";
   };
 
   const refreshSession = useCallback(async () => {
@@ -105,7 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     email: string;
     password: string;
     full_name: string;
-    role: "student" | "recruiter";
+    role: "student" | "recruiter" | "business";
   }) => {
     const res = await authApi.register(data);
     localStorage.setItem("access_token", res.data.access_token);

@@ -46,7 +46,7 @@ export interface User {
   id: string;
   email: string;
   full_name: string;
-  role: "student" | "recruiter" | "admin";
+  role: "student" | "recruiter" | "business" | "admin";
   avatar_url?: string | null;
   onboarding_completed: boolean;
   created_at: string;
@@ -61,7 +61,7 @@ export interface AuthResponse {
 }
 
 export interface OnboardingPayload {
-  role: "student" | "recruiter";
+  role: "student" | "recruiter" | "business";
   data: Record<string, unknown>;
 }
 
@@ -79,7 +79,7 @@ export const authApi = {
     email: string;
     password: string;
     full_name: string;
-    role: "student" | "recruiter";
+    role: "student" | "recruiter" | "business";
   }) => api.post<AuthResponse>("/api/v1/auth/register", data),
 
   login: (email: string, password: string) =>

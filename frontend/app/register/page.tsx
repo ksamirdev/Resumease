@@ -15,7 +15,7 @@ export default function RegisterPage() {
     full_name: "",
     email: "",
     password: "",
-    role: "student" as "student" | "recruiter",
+    role: "student" as "student" | "recruiter" | "business",
   });
   const [submitting, setSubmitting] = useState(false);
 
@@ -36,9 +36,7 @@ export default function RegisterPage() {
       await register(form);
       toast.success("Account created!");
       router.push(
-        form.role === "recruiter"
-          ? "/recruiter/dashboard"
-          : "/student/dashboard"
+        form.role === "student" ? "/student/dashboard" : "/recruiter/dashboard"
       );
     } catch (err: unknown) {
       const message =
@@ -133,18 +131,24 @@ export default function RegisterPage() {
                 I am a…
               </label>
               <div className="flex gap-3">
-                {(["student", "recruiter"] as const).map((r) => (
+                {(
+                  [
+                    { value: "student", label: "Student" },
+                    { value: "recruiter", label: "Recruiter" },
+                    { value: "business", label: "Business" },
+                  ] as const
+                ).map(({ value, label }) => (
                   <button
-                    key={r}
+                    key={value}
                     type="button"
-                    onClick={() => setForm({ ...form, role: r })}
-                    className={`flex-1 rounded-lg border py-2.5 text-sm font-medium capitalize transition-all ${
-                      form.role === r
+                    onClick={() => setForm({ ...form, role: value })}
+                    className={`flex-1 rounded-lg border py-2.5 text-sm font-medium transition-all ${
+                      form.role === value
                         ? "border-violet-500 bg-violet-50 dark:bg-violet-950/50 text-violet-700 dark:text-violet-300 shadow-sm"
                         : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/60"
                     }`}
                   >
-                    {r}
+                    {label}
                   </button>
                 ))}
               </div>

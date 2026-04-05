@@ -9,12 +9,13 @@ export default function OnboardingForm() {
   const router = useRouter();
   const { user, completeOnboarding, getPostLoginRoute } = useAuth();
 
-  const initialRole = useMemo(
-    () => (user?.role === "recruiter" ? "recruiter" : "student"),
-    [user?.role]
-  );
+  const initialRole = useMemo(() => {
+    if (user?.role === "recruiter") return "recruiter";
+    if (user?.role === "business") return "business";
+    return "student";
+  }, [user?.role]);
 
-  const [role, setRole] = useState<"student" | "recruiter">(initialRole);
+  const [role, setRole] = useState<"student" | "recruiter" | "business">(initialRole);
   const [loading, setLoading] = useState(false);
 
   const [student, setStudent] = useState({
@@ -32,6 +33,14 @@ export default function OnboardingForm() {
     company_size: "",
   });
 
+  const [business, setBusiness] = useState({
+    company_name: "",
+    industry: "",
+    company_size: "",
+    website: "",
+    description: "",
+  });
+
   const toArray = (value: string) =>
     value
       .split(",")
@@ -46,27 +55,40 @@ export default function OnboardingForm() {
     setLoading(true);
 
     try {
-      const payload =
-        role === "student"
-          ? {
-              role,
-              data: {
-                college: student.college,
-                degree: student.degree,
-                graduation_year: Number(student.graduation_year),
-                target_roles: toArray(student.target_roles),
-                skills_self_reported: toArray(student.skills_self_reported),
-              },
-            }
-          : {
-              role,
-              data: {
-                company: recruiter.company,
-                designation: recruiter.designation,
-                hiring_for: toArray(recruiter.hiring_for),
-                company_size: recruiter.company_size,
-              },
-            };
+      let payload: { role: "student" | "recruiter" | "business"; data: Record<string, unknown> };
+      if (role === "student") {
+        payload = {
+          role,
+          data: {
+            college: student.college,
+            degree: student.degree,
+            graduation_year: Number(student.graduation_year),
+            target_roles: toArray(student.target_roles),
+            skills_self_reported: toArray(student.skills_self_reported),
+          },
+        };
+      } else if (role === "recruiter") {
+        payload = {
+          role,
+          data: {
+            company: recruiter.company,
+            designation: recruiter.designation,
+            hiring_for: toArray(recruiter.hiring_for),
+            company_size: recruiter.company_size,
+          },
+        };
+      } else {
+        payload = {
+          role,
+          data: {
+            company_name: business.company_name,
+            industry: business.industry,
+            company_size: business.company_size,
+            ...(business.website ? { website: business.website } : {}),
+            ...(business.description ? { description: business.description } : {}),
+          },
+        };
+      }
 
       const nextUser = await completeOnboarding(payload);
       toast.success("Onboarding completed");
@@ -85,29 +107,27 @@ export default function OnboardingForm() {
     <form onSubmit={handleSubmit} className="space-y-6 rounded-2xl border border-slate-200/80 dark:border-slate-700/60 bg-white dark:bg-slate-900 p-8 shadow-xl shadow-slate-200/50 dark:shadow-slate-950/50">
       <div>
         <p className="mb-4 text-sm font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wide">I am joining as</p>
-        <div className="grid grid-cols-2 gap-3">
-          <button
-            type="button"
-            onClick={() => setRole("student")}
-            className={`rounded-lg border px-4 py-3 text-sm font-semibold transition-all ${
-              role === "student"
-                ? "border-violet-500 bg-violet-50 dark:bg-violet-950/50 text-violet-700 dark:text-violet-300 shadow-sm"
-                : "border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 text-slate-700 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
-            }`}
-          >
-            👨‍🎓 Student
-          </button>
-          <button
-            type="button"
-            onClick={() => setRole("recruiter")}
-            className={`rounded-lg border px-4 py-3 text-sm font-semibold transition-all ${
-              role === "recruiter"
-                ? "border-violet-500 bg-violet-50 dark:bg-violet-950/50 text-violet-700 dark:text-violet-300 shadow-sm"
-                : "border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 text-slate-700 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
-            }`}
-          >
-            💼 Recruiter
-          </button>
+        <div className="grid grid-cols-3 gap-3">
+          {(
+            [
+              { value: "student", label: "👨‍🎓 Student" },
+              { value: "recruiter", label: "💼 Recruiter" },
+              { value: "business", label: "🏢 Business" },
+            ] as const
+          ).map(({ value, label }) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setRole(value)}
+              className={`rounded-lg border px-4 py-3 text-sm font-semibold transition-all ${
+                role === value
+                  ? "border-violet-500 bg-violet-50 dark:bg-violet-950/50 text-violet-700 dark:text-violet-300 shadow-sm"
+                  : "border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 text-slate-700 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -166,7 +186,7 @@ export default function OnboardingForm() {
             <p className="mt-1 text-xs text-zinc-500">Separate multiple skills with commas</p>
           </div>
         </div>
-      ) : (
+      ) : role === "recruiter" ? (
         <div className="space-y-5 pt-4">
           <div>
             <label className={labelClass}>Company Name</label>
@@ -206,6 +226,58 @@ export default function OnboardingForm() {
               onChange={(e) => setRecruiter((prev) => ({ ...prev, company_size: e.target.value }))}
               className={inputClass}
               placeholder="e.g., 50-200, 1000+, Early-stage startup"
+            />
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-5 pt-4">
+          <div>
+            <label className={labelClass}>Company Name</label>
+            <input
+              required
+              value={business.company_name}
+              onChange={(e) => setBusiness((prev) => ({ ...prev, company_name: e.target.value }))}
+              className={inputClass}
+              placeholder="e.g., Acme Corp, TechStartup Inc"
+            />
+          </div>
+          <div>
+            <label className={labelClass}>Industry</label>
+            <input
+              required
+              value={business.industry}
+              onChange={(e) => setBusiness((prev) => ({ ...prev, industry: e.target.value }))}
+              className={inputClass}
+              placeholder="e.g., Software, Finance, Healthcare, E-commerce"
+            />
+          </div>
+          <div>
+            <label className={labelClass}>Company Size</label>
+            <input
+              required
+              value={business.company_size}
+              onChange={(e) => setBusiness((prev) => ({ ...prev, company_size: e.target.value }))}
+              className={inputClass}
+              placeholder="e.g., 1-10, 50-200, 1000+"
+            />
+          </div>
+          <div>
+            <label className={labelClass}>Website <span className="normal-case font-normal text-slate-400">(optional)</span></label>
+            <input
+              value={business.website}
+              onChange={(e) => setBusiness((prev) => ({ ...prev, website: e.target.value }))}
+              className={inputClass}
+              placeholder="https://yourcompany.com"
+            />
+          </div>
+          <div>
+            <label className={labelClass}>About your company <span className="normal-case font-normal text-slate-400">(optional)</span></label>
+            <textarea
+              value={business.description}
+              onChange={(e) => setBusiness((prev) => ({ ...prev, description: e.target.value }))}
+              className={`${inputClass} resize-none`}
+              rows={3}
+              placeholder="Brief description of what your company does"
             />
           </div>
         </div>

@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 
 from app.config import settings
 from app.models.user import (
+    BusinessOnboardingData,
     GoogleLoginRequest,
     OnboardingRequest,
     ProfileUpdateRequest,
@@ -103,8 +104,10 @@ async def complete_onboarding(
     try:
         if payload.role == "student":
             validated = StudentOnboardingData.model_validate(payload.data)
-        else:
+        elif payload.role == "recruiter":
             validated = RecruiterOnboardingData.model_validate(payload.data)
+        else:
+            validated = BusinessOnboardingData.model_validate(payload.data)
     except Exception as exc:
         raise HTTPException(status_code=422, detail=f"Invalid onboarding payload: {exc}")
 
@@ -151,6 +154,8 @@ async def update_profile(
                 validated = StudentOnboardingData.model_validate(payload.onboarding_data)
             elif current_user.get("role") == "recruiter":
                 validated = RecruiterOnboardingData.model_validate(payload.onboarding_data)
+            elif current_user.get("role") == "business":
+                validated = BusinessOnboardingData.model_validate(payload.onboarding_data)
             else:
                 raise HTTPException(status_code=403, detail="Role not allowed for onboarding data update")
             updates["onboarding_data"] = validated.model_dump()
